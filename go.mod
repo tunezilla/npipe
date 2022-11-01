@@ -1,4 +1,4 @@
-module github.com/tunezilla/npipe
+module github.com/tunezilla/npipe/v2
 
 go 1.19
 
