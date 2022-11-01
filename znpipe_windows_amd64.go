@@ -6,6 +6,7 @@ package npipe
 
 import "unsafe"
 import "syscall"
+import "golang.org/x/sys/windows"
 
 var (
 	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -19,7 +20,15 @@ var (
 	procCancelIoEx          = modkernel32.NewProc("CancelIoEx")
 )
 
-func createNamedPipe(name *uint16, openMode uint32, pipeMode uint32, maxInstances uint32, outBufSize uint32, inBufSize uint32, defaultTimeout uint32, sa *syscall.SecurityAttributes) (handle syscall.Handle, err error) {
+func createNamedPipe(name *uint16, openMode uint32, pipeMode uint32, maxInstances uint32, outBufSize uint32, inBufSize uint32, defaultTimeout uint32, sid *windows.SECURITY_DESCRIPTOR) (handle syscall.Handle, err error) {
+	var sa *windows.SecurityAttributes
+	if sid != nil {
+		sa = &windows.SecurityAttributes{
+			Length: uint32(unsafe.Sizeof(*sid)),
+			SecurityDescriptor: sid,
+		}
+	}
+	
 	r0, _, e1 := syscall.Syscall9(procCreateNamedPipeW.Addr(), 8, uintptr(unsafe.Pointer(name)), uintptr(openMode), uintptr(pipeMode), uintptr(maxInstances), uintptr(outBufSize), uintptr(inBufSize), uintptr(defaultTimeout), uintptr(unsafe.Pointer(sa)), 0)
 	handle = syscall.Handle(r0)
 	if handle == syscall.InvalidHandle {

@@ -15,6 +15,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -516,11 +518,22 @@ func createPipe(address string, first bool) (syscall.Handle, error) {
 	if first {
 		mode |= file_flag_first_pipe_instance
 	}
+
+	sid, err := windows.NewSecurityDescriptor()
+	if err != nil {
+		return 0, err
+	}
+
+	// give access to everyone
+	if err = sid.SetDACL(nil, true, false); err != nil {
+		return 0, err
+	}
+
 	return createNamedPipe(n,
 		mode,
 		pipe_type_byte,
 		pipe_unlimited_instances,
-		512, 512, 0, nil)
+		512, 512, 0, sid)
 }
 
 func badAddr(addr string) PipeError {
